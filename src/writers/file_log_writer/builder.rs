@@ -18,12 +18,16 @@ pub struct FileLogWriterBuilder {
     o_rotation_config: Option<RotationConfig>,
     max_log_level: log::LevelFilter,
     cleanup_in_background_thread: bool,
+    sender: Option<plugin::Sender>,
+    name: String,
 }
 
 /// Simple methods for influencing the behavior of the `FileLogWriter`.
 impl FileLogWriterBuilder {
     pub(crate) fn new() -> FileLogWriterBuilder {
         FileLogWriterBuilder {
+            name: String::from("default"),
+            sender: None,
             discriminant: None,
             o_rotation_config: None,
             config: Config::default(),
@@ -32,7 +36,18 @@ impl FileLogWriterBuilder {
             cleanup_in_background_thread: true,
         }
     }
-
+    /// Set name.
+    #[must_use]
+    pub fn name(mut self, name: String) -> Self {
+        self.name = name;
+        self
+    }
+    ///  Add a grpc sender.
+    #[must_use]
+    pub fn sender(mut self, sender: plugin::Sender) -> Self {
+        self.sender = Some(sender);
+        self
+    }
     /// Makes the `FileLogWriter` print an info message to stdout
     /// when a new file is used for log-output.
     #[must_use]
@@ -193,6 +208,8 @@ impl FileLogWriterBuilder {
                 self.cleanup_in_background_thread,
             )?),
             self.max_log_level,
+            self.sender,
+            self.name,
         ))
     }
 }
