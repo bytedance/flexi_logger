@@ -13,7 +13,6 @@ use state::State;
 use std::io::Write;
 use std::path::PathBuf;
 use std::sync::Mutex;
-
 /// A configurable `LogWriter` implementation that writes to a file or a sequence of files.
 ///
 /// See the [module description](index.html) for usage guidance.
@@ -26,6 +25,8 @@ pub struct FileLogWriter {
     // we need internal mutability and thread-safety.
     state: Mutex<State>,
     max_log_level: log::LevelFilter,
+    sender: Option<plugin::Sender>,
+    name: String,
 }
 impl FileLogWriter {
     pub(crate) fn new(
@@ -33,12 +34,16 @@ impl FileLogWriter {
         line_ending: &'static [u8],
         state: Mutex<State>,
         max_log_level: log::LevelFilter,
+        sender: Option<plugin::Sender>,
+        name: String,
     ) -> FileLogWriter {
         FileLogWriter {
             format,
             line_ending,
             state,
             max_log_level,
+            sender,
+            name,
         }
     }
 
@@ -63,6 +68,35 @@ impl FileLogWriter {
 impl LogWriter for FileLogWriter {
     #[inline]
     fn write(&self, now: &mut DeferredNow, record: &Record) -> std::io::Result<()> {
+        if record.level().eq(&log::Level::Error) {
+            match &self.sender {
+                Some(s) => {
+                    let mut data = std::collections::HashMap::new();
+                    data.insert("data_type", "1002");
+                    data.insert("level", "error");
+                    let timestamp = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap_or_default()
+                        .as_secs()
+                        .to_string();
+                    data.insert("timestamp", timestamp.as_str());
+                    data.insert(
+                        "source",
+                        record
+                            .module_path()
+                            .unwrap_or_else(|| record.file().unwrap_or_else(|| record.target())),
+                    );
+                    let msg = record.args().to_string();
+                    data.insert("msg", msg.as_str());
+                    data.insert("plugin", self.name.as_str());
+                    match s.send(&data) {
+                        Ok(_) => {}
+                        Err(e) => println!("Log send failed:{}", e),
+                    };
+                }
+                None => {}
+            }
+        }
         buffer_with(|tl_buf| match tl_buf.try_borrow_mut() {
             Ok(mut buffer) => {
                 (self.format)(&mut *buffer, now, record).unwrap_or_else(|e| write_err(ERR_1, &e));

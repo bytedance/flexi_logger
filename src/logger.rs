@@ -165,7 +165,6 @@ impl Logger {
             duplicate_err: Duplicate::None,
             duplicate_out: Duplicate::None,
             format_for_file: default_format,
-
             #[cfg(feature = "colors")]
             format_for_stdout: AdaptiveFormat::Default.format_function(Stream::StdOut),
             #[cfg(feature = "colors")]
@@ -511,6 +510,17 @@ impl Logger {
         writer: Box<dyn LogWriter>,
     ) -> Self {
         self.other_writers.insert(target_name.into(), writer);
+        self
+    }
+
+    /// Use this function to set send handler for sending logs to server.
+    pub fn send_handler(mut self, sender: plugin::Sender) -> Self {
+        self.flwb = self.flwb.sender(sender);
+        self
+    }
+    /// Set name which will be used for sending logs to server.
+    pub fn plugin_name(mut self, plugin_name: String) -> Self {
+        self.flwb = self.flwb.name(plugin_name);
         self
     }
 

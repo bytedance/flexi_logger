@@ -21,32 +21,34 @@ all-features = true
 
 [features]
 default = ["colors", "textfilter"]
-colors = ["atty", "lazy_static","yansi"]
-specfile = ["specfile_without_notification","notify"]
-specfile_without_notification = ["serde","toml","serde_derive"]
+colors = ["atty", "lazy_static", "yansi"]
+specfile = ["specfile_without_notification", "notify"]
+specfile_without_notification = ["serde", "toml", "serde_derive"]
 syslog_writer = ["libc", "hostname"]
-ziplog = ["compress"]  # for backwards compatibility
+ziplog = ["compress"] # for backwards compatibility
 compress = ["flate2"]
 textfilter = ["regex"]
 
 [dependencies]
-atty = {version = "0.2", optional = true}
+plugin = { path = "../plugin" }
+anyhow = "1"
+atty = { version = "0.2", optional = true }
 chrono = "0.4"
 glob = "0.3"
-hostname = {version = "0.3", optional = true}
-lazy_static = {version = "1.4", optional = true}
+hostname = { version = "0.3", optional = true }
+lazy_static = { version = "1.4", optional = true }
 log = { version = "0.4", features = ["std"] }
 notify = { version = "4.0", optional = true }
 regex = { version = "1.1", optional = true }
 serde = { version = "1.0", optional = true }
-serde_derive = {version = "1.0", optional = true}
+serde_derive = { version = "1.0", optional = true }
 thiserror = "1.0"
 toml = { version = "0.5", optional = true }
-yansi = {version = "0.5", optional = true}
-flate2 = {version = "1.0", optional = true}
+yansi = { version = "0.5", optional = true }
+flate2 = { version = "1.0", optional = true }
 
 [target.'cfg(linux)'.dependencies]
-libc = {version = "^0.2.50", optional = true}
+libc = { version = "^0.2.50", optional = true }
 
 [dev-dependencies]
 serde_derive = "1.0"
